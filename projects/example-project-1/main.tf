@@ -36,12 +36,12 @@ data "terraform_remote_state" "github_org_config" {
 module "github_repo" {
   source = "../../modules/github-repo"
 
-  repository_name        = var.repository_name
-  repository_description = var.repository_description
-  repository_visibility  = var.repository_visibility
-  is_template            = var.is_template
-  template_owner         = var.template_owner
-  template_repository    = var.template_repository
+  repository_name        = "example-project-1"
+  repository_description = "Example project 1 repository for testing of cloud-setup.projects pipeline"
+  repository_visibility  = "private"
+  is_template            = false
+  template_owner         = ""
+  template_repository    = ""
 
   # Grant teams repository access
   repository_teams = {
@@ -68,4 +68,11 @@ module "github_repo" {
   }
 }
 
-
+# Overwrite some private variables from the organization secrets by placing them in the repository secrets, in case
+# the github plan does not support the use of organisation secrets in private repositories. You can remove this part
+# if you are using a github plan that does support this feature.
+resource "github_actions_secret" "spaces_secret_key_ci" {
+  repository    = module.github_repo.repository_name
+  secret_name   = "DO_STATE_BUCKET_SECRET_KEY"
+  plaintext_value = data.terraform_remote_state.github_org_config.outputs.bucket_spaces_secret_key_ci
+}
