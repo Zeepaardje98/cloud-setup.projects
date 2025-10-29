@@ -1,0 +1,100 @@
+name: Terraform Project
+
+on:
+  workflow_dispatch:
+    inputs:
+      project:
+        description: "Project directory under projects/"
+        required: true
+        default: "example-project-1"
+        type: string
+      action:
+        description: "Terraform action"
+        required: true
+        default: "plan"
+        type: choice
+        options:
+          - plan
+          - apply
+          - destroy
+      auto_approve:
+        description: "Auto-approve apply/destroy"
+        required: false
+        default: "false"
+        type: boolean
+
+env:
+    # DigitalOcean Spaces bucket name and access key, used for terraform remote state.
+    # TF_VAR_region: ${{ vars.STATE_BUCKET_REGION }}
+    # TF_VAR_bucket_name: ${{ vars.STATE_BUCKET_NAME }}
+    AWS_ACCESS_KEY_ID: ${{ vars.STATE_BUCKET_ACCESS_KEY }}
+    AWS_SECRET_ACCESS_KEY: ${{ secrets.STATE_BUCKET_SECRET_KEY }}
+    
+    # Terraforms Github provider authorization
+    TF_VAR_github_organization: ${{ vars._GITHUB_ORGANIZATION_NAME }}
+    TF_VAR_github_repo_token: ${{ secrets._GITHUB_REPO_TOKEN }}
+
+jobs:
+  terraform:
+    name: Terraform (${{ inputs.project }} - ${{ inputs.action }})
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: projects/${{ inputs.project }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.5
+
+      - name: Create backend.hcl for project
+        run: |
+          cat > backend.hcl <<EOF
+          endpoints = {
+            s3 = "https://${{ vars.STATE_BUCKET_REGION }}.digitaloceanspaces.com"
+          }
+          bucket                      = "${{ vars.STATE_BUCKET_NAME }}"
+          key                         = "projects/${{ inputs.project }}/terraform.tfstate"
+          region                      = "us-east-1"
+          skip_credentials_validation = true
+          skip_requesting_account_id  = true
+          skip_metadata_api_check     = true
+          skip_region_validation      = true
+          skip_s3_checksum            = true
+          use_lockfile                = true
+          EOF
+
+      - name: Terraform Init
+        run: terraform init -backend-config=backend.hcl
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        if: inputs.action == 'plan'
+        run: terraform plan
+
+      - name: Terraform Apply
+        if: inputs.action == 'apply'
+        run: |
+          if [[ "${{ inputs.auto_approve }}" == "true" ]]; then
+            terraform apply -auto-approve
+          else
+            terraform apply
+          fi
+
+      - name: Terraform Destroy
+        if: inputs.action == 'destroy'
+        run: |
+          if [[ "${{ inputs.auto_approve }}" == "true" ]]; then
+            terraform destroy -auto-approve
+          else
+            terraform destroy
+          fi
+
+
