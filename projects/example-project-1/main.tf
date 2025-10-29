@@ -14,15 +14,14 @@ provider "github" {
   owner = var.github_organization
 }
 
-# Read outputs from the GitHub organization state (02-github-org-config)
-data "terraform_remote_state" "github_org_config" {
+data "terraform_remote_state" "do-remote-state" {
   backend = "s3"
   config = {
     endpoints = {
       s3 = "https://${var.region}.digitaloceanspaces.com"
     }
-    bucket                      = var.bucket_name
-    key                         = "foundation/github-org-config/terraform.tfstate"
+    bucket                      = "${var.bucket_name}"
+    key                         = "foundation/digitalocean-remote-state/terraform.tfstate"
     region                      = "us-east-1"
     skip_credentials_validation = true
     skip_requesting_account_id  = true
@@ -74,5 +73,5 @@ module "github_repo" {
 resource "github_actions_secret" "spaces_secret_key_ci" {
   repository    = module.github_repo.repository_name
   secret_name   = "DO_STATE_BUCKET_SECRET_KEY"
-  plaintext_value = data.terraform_remote_state.github_org_config.outputs.bucket_spaces_secret_key_ci
+  plaintext_value = data.terraform_remote_state.do-remote-state.outputs.bucket_spaces_secret_key_ci
 }
