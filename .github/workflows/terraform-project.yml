@@ -22,17 +22,14 @@ on:
         required: false
         default: "false"
         type: boolean
-
 env:
-    # DigitalOcean Spaces bucket name and access key, used for terraform remote state.
-    # TF_VAR_region: ${{ vars.STATE_BUCKET_REGION }}
-    # TF_VAR_bucket_name: ${{ vars.STATE_BUCKET_NAME }}
-    AWS_ACCESS_KEY_ID: ${{ vars.STATE_BUCKET_ACCESS_KEY }}
-    AWS_SECRET_ACCESS_KEY: ${{ secrets.STATE_BUCKET_SECRET_KEY }}
-    
-    # Terraforms Github provider authorization
-    TF_VAR_github_organization: ${{ vars._GITHUB_ORGANIZATION_NAME }}
-    TF_VAR_github_repo_token: ${{ secrets._GITHUB_REPO_TOKEN }}
+  # DigitalOcean Spaces bucket name and access key, used for terraform remote state.
+  AWS_ACCESS_KEY_ID: ${{ vars.DO_STATE_BUCKET_ACCESS_KEY }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.DO_STATE_BUCKET_SECRET_KEY }}
+  
+  # Terraforms Github provider authorization
+  TF_VAR_github_organization: ${{ vars._GITHUB_ORGANIZATION_NAME }}
+  TF_VAR_github_repo_token: ${{ secrets._GITHUB_REPO_TOKEN }}
 
 jobs:
   terraform:
