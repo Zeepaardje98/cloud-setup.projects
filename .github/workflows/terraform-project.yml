@@ -49,25 +49,13 @@ jobs:
         with:
           terraform_version: 1.7.5
 
-      - name: Create backend.hcl for project
+      - name: Generate Backend Configuration
         run: |
-          cat > backend.hcl <<EOF
-          endpoints = {
-            s3 = "https://${{ vars.STATE_BUCKET_REGION }}.digitaloceanspaces.com"
-          }
-          bucket                      = "${{ vars.STATE_BUCKET_NAME }}"
-          key                         = "projects/${{ inputs.project }}/terraform.tfstate"
-          region                      = "us-east-1"
-          skip_credentials_validation = true
-          skip_requesting_account_id  = true
-          skip_metadata_api_check     = true
-          skip_region_validation      = true
-          skip_s3_checksum            = true
-          use_lockfile                = true
-          EOF
+          source ../../scripts/common.sh
+          generate_backend_file "${{ vars.DO_STATE_BUCKET_REGION }}" "${{ vars.DO_STATE_BUCKET_NAME }}" "../backend.hcl"
 
       - name: Terraform Init
-        run: terraform init -backend-config=backend.hcl
+        run: terraform init -backend-config ../backend.hcl -backend-config="key=projects/${{ inputs.project }}/terraform.tfstate"
 
       - name: Terraform Validate
         run: terraform validate
